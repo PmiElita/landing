@@ -38,12 +38,12 @@ public class HomeawayService {
 	@Autowired
 	private RestTemplate restTemplate;
 	
-	public HomeawaySearchResult search(String country, String city, Double maxPrice, LocalDate date, int duration, Integer minSleeps){
+	public HomeawaySearchResult search(String country, String city, Integer maxPrice, LocalDate date, LocalDate dateEnd, Integer minSleeps){
 
 		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
 		params.add("pageSize", PAGE_SIZE);
 		params.add("availabilityStart", date.format(DateTimeFormatter.ISO_DATE));
-		params.add("availabilityEnd", date.plusDays(duration).format(DateTimeFormatter.ISO_DATE));
+		params.add("availabilityEnd", dateEnd.format(DateTimeFormatter.ISO_DATE));
 		params.add("maxPrice", maxPrice.toString());
 		params.add("q", country + "," + city);
 		params.add("minSleeps", minSleeps.toString());

@@ -10,7 +10,7 @@ import org.telegram.telegrambots.TelegramBotsApi;
 
 import com.hitg.domain.Country;
 import com.hitg.handler.TravelBotHandlers;
-import com.hitg.service.SkyScannerService;
+import com.hitg.service.GoogleService;
 
 @SpringBootApplication
 public class BotEngineApplication {
@@ -23,7 +23,6 @@ public class BotEngineApplication {
 		Country country = new Country();
 		country.setName("Spain");
 		country.setCode("ES");
-		System.out.println(CONTEXT.getBean(SkyScannerService.class).getReferalUrl("Germany", "Berlin", "Spain", "Barcelona", LocalDate.now().plusDays(1), LocalDate.now().plusDays(10)));
 		TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
         try {
             telegramBotsApi.registerBot(new TravelBotHandlers());

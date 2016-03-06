@@ -2,6 +2,7 @@ package com.hitg.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,10 +39,11 @@ public class TripAdviserService {
 		return results;
 	}
 	
-	public Map<String,List<TripAdviserResultDTO>> getAdvises(List<Category> categories){
+	public Map<String,List<TripAdviserResultDTO>> getAdvises(Set<Category> categories){
 		List<String> categoriesNames = categories.stream().map(Category::getName).collect(Collectors.toList());
 		return getResults().stream().filter(advise-> categoriesNames.contains(advise.getType())||categoriesNames.contains(advise.getSubcategory())).sorted((first,second)->second.getRating().compareTo(first.getRating())).collect(Collectors.groupingBy(advise-> advise.getCityName(), Collectors.toList()));
 	}
+	
 	
 	
 

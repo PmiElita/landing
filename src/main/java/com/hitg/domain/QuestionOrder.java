@@ -28,4 +28,36 @@ public class QuestionOrder {
 	@JoinColumn(name ="answer_id")
 	private Answer answer;
 
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+	public Question getParentQuestion() {
+		return parentQuestion;
+	}
+
+	public void setParentQuestion(Question parentQuestion) {
+		this.parentQuestion = parentQuestion;
+	}
+
+	public Question getChildQuestion() {
+		return childQuestion;
+	}
+
+	public void setChildQuestion(Question childQuestion) {
+		this.childQuestion = childQuestion;
+	}
+
+	public Answer getAnswer() {
+		return answer;
+	}
+
+	public void setAnswer(Answer answer) {
+		this.answer = answer;
+	}
+
 }
