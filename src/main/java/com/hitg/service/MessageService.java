@@ -97,7 +97,7 @@ public class MessageService {
 			user.setCountry(loc.getCountry());
 			userDAO.save(user);
 			AskedQuestion nextAskedQuestion = new AskedQuestion();
-			Question nextQuestion = questionDAO.findOne(5);
+			Question nextQuestion = questionDAO.findOne(2);
 			nextAskedQuestion.setQuestion(nextQuestion);
 			nextAskedQuestion.setIsActive(true);
 			nextAskedQuestion.setUser(user);

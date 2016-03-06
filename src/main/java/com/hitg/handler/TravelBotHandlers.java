@@ -1,14 +1,20 @@
 package com.hitg.handler;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.SendMessage;
 import org.telegram.telegrambots.api.methods.SendPhoto;
 import org.telegram.telegrambots.api.objects.Message;
+import org.telegram.telegrambots.api.objects.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 
@@ -27,9 +33,14 @@ import com.hitg.service.TripAdviserService;
 import com.hitg.service.UserService;
 
 public class TravelBotHandlers extends TelegramLongPollingBot {
-
+	private static  Map<Long, Map<String,List<TripAdviserResultDTO>>> RESULT_CONTEXT = new HashMap<>();
+	private static Map<Long, Integer> RESULTS_INDEX = new HashMap<>();
+	private static Set<Long> SHOPH_PHOTO = new HashSet<>();
 	private static final List<String> CATEGORIES = Arrays.asList("nightlife", "shopping", "landmarks",
 			"sightseeing tours", "museums", "adventure");
+	
+	
+	
 	private HomeawayService homeawayService;
 	private MessageService messageService;
 
@@ -89,13 +100,16 @@ public class TravelBotHandlers extends TelegramLongPollingBot {
 
 	private void handleIncomingMessage(Message message) throws TelegramApiException, IOException {
 		SendMessage sendMessage = new SendMessage();
-		SendPhoto sendPhoto = new SendPhoto();
 		String chatId = message.getChatId().toString();
-		PhotoService photoService = new PhotoService();
-		int userId = message.getFrom().getId();
-
+	
 		User user = userService.findUserByChatId(message.getChatId());
 		// if we have a new user
+			if  (message.getText().equals("Show next")){
+				sendPhoto(user, message);
+			} else if (message.getText().equals("Book")){
+				sendLinks(user, message);
+			}
+			
 		if (user == null) {
 			sendMessage = messageService.getStartMessage(message);
 		} else {
@@ -147,15 +161,53 @@ public class TravelBotHandlers extends TelegramLongPollingBot {
 		// sendMessage(sendMessage);
 	}
 
+	private void sendLinks(User user, Message message) {
+		
+		TripData tripData = userService.getTripData(user);
+		Map<String, List<TripAdviserResultDTO>> advises = RESULT_CONTEXT.get(message.getChatId());
+		String key = null;
+		Iterator<String> iterator = advises.keySet().iterator();
+		int maxIndex = RESULTS_INDEX.get(message.getChatId());
+		
+		for(int i=0; i<maxIndex-1&&iterator.hasNext(); i++){
+			key = iterator.next();
+		}
+		TripAdviserResultDTO advise = advises.get(key).get(0);
+		HomeawaySearchResult result = homeawayService.search(advise.getCountryName(), advise.getCityName(), tripData.getBudget(), tripData.getStartDate()	,tripData.getEndDate(), 1);
+		String homeLink = result.getEntries().get(0).getListingUrl();
+		String scannerLink= scannerService.getReferalUrl(user.getCountry(), user.getCity(),advise.getCountryName(), advise.getCityName(), tripData.getStartDate(),tripData.getEndDate());
+		SendMessage sendMessage = new SendMessage();
+		sendMessage.setText("Here is a link for your flight: " + scannerLink + "  and here is a link for your accomodation: " +homeLink );
+		sendMessage.setChatId(message.getChatId().toString());
+		try {
+			sendMessage(sendMessage);
+		} catch (TelegramApiException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	private void sendPhoto(User user, Message message) {
 		
-		userService.addCategory(user,message.getText().trim() );
+		
 		PhotoService photoService = new PhotoService();
 		TripData tripData = userService.getTripData(user);
-		Map<String, List<TripAdviserResultDTO>> advises = tripAdviserService.getAdvises(user.getCategory());
-		TripAdviserResultDTO advise = advises.get(advises.keySet().iterator().next()).get(0);
+		if (!RESULT_CONTEXT.containsKey(message.getChatId())){
+			userService.addCategory(user,message.getText().trim() );
+		  RESULT_CONTEXT.put(message.getChatId(),tripAdviserService.getAdvises(user.getCategory()));
+		  RESULTS_INDEX.put(message.getChatId(), 0);
+		  SHOPH_PHOTO.add(message.getChatId());
+		}
+		Map<String, List<TripAdviserResultDTO>> advises = RESULT_CONTEXT.get(message.getChatId());
+		String key = null;
+		Iterator<String> iterator = advises.keySet().iterator();
+		int maxIndex = RESULTS_INDEX.get(message.getChatId());
+		for(int i=0; i<=maxIndex&&iterator.hasNext(); i++){
+			RESULTS_INDEX.put(message.getChatId(), RESULTS_INDEX.get(message.getChatId())+1);
+			key = iterator.next();
+		}
+		TripAdviserResultDTO advise = advises.get(key).get(0);
 		HomeawaySearchResult result = homeawayService.search(advise.getCountryName(), advise.getCityName(), tripData.getBudget(), tripData.getStartDate()	,tripData.getEndDate(), 1);
-		Double homeawayPrice = result.getEntries().get(0).getPriceRanges().get(0).getFrom()*(tripData.getEndDate().getDayOfYear()-tripData.getStartDate().getDayOfYear());
+		Double homeawayPrice = (result.getEntries().get(0).getPriceRanges().get(0).getFrom()+result.getEntries().get(0).getPriceRanges().get(0).getTo())/2*(tripData.getEndDate().getDayOfYear()-tripData.getStartDate().getDayOfYear());
 		Double scanenrPrice = scannerService.getMinQuotesPrice(user.getCountry(), user.getCity(),advise.getCountryName(), advise.getCityName(), tripData.getStartDate(),tripData.getEndDate());
 		
 		SendPhoto sendPhoto = new SendPhoto();
@@ -167,6 +219,12 @@ public class TravelBotHandlers extends TelegramLongPollingBot {
 		SendMessage sendMessage = new SendMessage();
 		sendMessage.setText(advise.getCountryName() + " " + advise.getCityName() + " " + (homeawayPrice.intValue()+scanenrPrice.intValue())+ "eur");
 		sendMessage.setChatId(message.getChatId().toString());
+
+		ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+		List<List<String>> keyboard = new ArrayList<>();
+		keyboard.add(Arrays.asList("Book", "Show next"));
+		replyKeyboardMarkup.setKeyboard(keyboard);
+		sendMessage.setReplayMarkup(replyKeyboardMarkup);
 		try {
 			sendMessage(sendMessage);
 			sendPhoto(sendPhoto);
