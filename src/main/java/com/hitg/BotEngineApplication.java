@@ -7,14 +7,18 @@ import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.TelegramBotsApi;
 
 import com.hitg.handler.TravelBotHandlers;
-import com.hitg.service.FirstService;
+import com.hitg.service.SkyScannerService;
 
 @SpringBootApplication
 public class BotEngineApplication {
 
+	public static ApplicationContext CONTEXT;
+	
+	
 	public static void main(String[] args) {
-		ApplicationContext context = SpringApplication.run(BotEngineApplication.class, args);
-		((FirstService)context.getBean("firstService")).sayHello();
+		CONTEXT= SpringApplication.run(BotEngineApplication.class, args);
+		
+		CONTEXT.getBean(SkyScannerService.class).getCountries();;
 		TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
         try {
             telegramBotsApi.registerBot(new TravelBotHandlers());

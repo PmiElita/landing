@@ -20,7 +20,7 @@ public class User {
 	private Integer id;
 	
 	@Column(name="chat_id")
-	private String chatId;
+	private Long chatId;
 	
 	@Column(name = "first_name")
 	private String firstName;
@@ -35,6 +35,7 @@ public class User {
 	@ManyToMany
 	private Set<Category> category;
 
+
 	public Integer getId() {
 		return id;
 	}
@@ -43,11 +44,11 @@ public class User {
 		this.id = id;
 	}
 
-	public String getChatId() {
+	public Long getChatId() {
 		return chatId;
 	}
 
-	public void setChatId(String chatId) {
+	public void setChatId(Long chatId) {
 		this.chatId = chatId;
 	}
 
